@@ -259,7 +259,7 @@ function calc(){
   }else{r.fbsfbe='';r.tlNet='';r.tltgPct='';r.avgBag='';}
  }
  function addAvg(v,a){
-  var s=String(v==null?'':'').replace(/^\s+|\s+$/g,'');
+  var s=String(v==null?'':v).replace(/^\s+|\s+$/g,'');
   if(s==='')return;
   var n=parseFloat(String(v).replace(/,/g,''));
   if(!isNaN(n))a.push(n);
