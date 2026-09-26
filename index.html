@@ -127,7 +127,7 @@ function renderWizard(){
    h='<div class="wiz-text"><b>Enter ICCS Member '+memberNo+' name</b><br>This name will appear in the final report signature section. The three members will be displayed side-by-side.</div><input id="wizMember" class="wiz-input" value="'+esc(currentReport[k]||'')+'" placeholder="Enter ICCS member name">';
    q('wizardNext').innerText='Next';
  }else if(wizardStage===5){
-   h='<div class="wiz-text"><b>Enter total number of wagons in the rake.</b><br>For 6.1, 6.2 and 6.3 the app creates <b>2% of the wagon count, rounded up</b> input rows under each section.</div><input id="wizWagons" class="wiz-input" type="number" min="1" value="'+esc(currentReport.noOfWagons||'')+'" placeholder="Enter total wagons"><div id="rowPreview" class="helptext" style="margin-top:8px"></div>';
+   h='<div class="wiz-text"><b>Enter total number of wagons in the rake.</b><br>For 6.1, 6.2 and 6.3 the app creates <b>5% of the wagon count, rounded up</b> input rows under each section. Example: <b>40 wagons = 2 rows</b>; <b>60 wagons = 3 rows</b>.</div><input id="wizWagons" class="wiz-input" type="number" min="1" value="'+esc(currentReport.noOfWagons||'')+'" placeholder="Enter total wagons"><div id="rowPreview" class="helptext" style="margin-top:8px"></div>';
    q('wizardNext').innerText='Next';
  }else{
    h='<div class="wiz-text"><b>Select the remarks to include in the report.</b><br>The remarks below are predefined ICCS remarks. Tick the required remarks. <b>Any custom remark added below belongs only to this report and will never be saved as a depot default.</b></div><div class="remarks-section-label">PREDEFINED ICCS REMARKS</div><div id="remarksScroll" class="remarks-scroll"></div><div class="remarks-section-label" style="margin-top:9px">CUSTOM REMARKS — THIS REPORT ONLY</div><div id="extraRemarksArea"></div>';
@@ -139,7 +139,7 @@ function renderWizard(){
  if(wizardStage===5){var w=q('wizWagons');w.focus();w.onkeyup=previewRows;w.oninput=previewRows;w.onchange=previewRows;previewRows()}
  if(wizardStage===6)renderRemarks();
 }
-function previewRows(){var w=parseInt(q('wizWagons').value,10),n=(isNaN(w)||w<1)?0:Math.ceil(w*.02);q('rowPreview').innerText=n?'Rows per section: '+n:'Enter wagon count to calculate supervised rows.'}
+function previewRows(){var w=parseInt(q('wizWagons').value,10),n=(isNaN(w)||w<1)?0:Math.ceil(w*.05);q('rowPreview').innerText=n?'Rows per section: '+n:'Enter wagon count to calculate supervised rows.'}
 var REMARKS=['The rake was not loaded through DOS by the Consignor','Wagonwise DMC is not mentioendd in the Loading Statement.','High Security Cables were found in all the Wagons','18 inch gap not provided in all wagons','Erratic loading was found in wagons.','LDPE Sheets were not spread at the flap of the Doors of the Wagons.','Some of the water affected bags received from the wagons. During unloading of the rake.','The Stocks were loaded in unclean/cement coated wagons.','Cut & Torn/Slack Bags were notice in some of the wagons','Spillage/loose grain noticed in all wagons which were filled in slack bags and RHP utilised.','Trucks were covered with tarpaulin and wax sealing was done at goodshed, before trransporting to depot.','All Stocks were weighed 100% at Weighbridge located within the depot premises.','10% of Stocks were weighed at Weighbridge located within the depot premises.','All precautionery measures taken during unloading i.e loading into trucks, transportation and unloading.','Unloading of Wagons/transportation/weighment is carried out under strict supervision by the ICCS, Depot Incharge & Staff','The transit loss may be due to erratic loading by the consignor and multiple handling of the stocks.','__TL_AUTO__'];
 
 function initRemarkDefaultsFromExisting(){
@@ -241,13 +241,14 @@ function wizardNext(){
  currentReport.remarks=chosen;
  q('wizardModal').className='modal-back';show('reportScreen');renderReport();setTimeout(fitReportToScreen,20)
 }
-function buildRows(w){var n=Math.ceil(w*.02),rows=[];for(var i=0;i<n;i++)rows.push({category:'6.1'});for(var j=0;j<n;j++)rows.push({category:'6.2'});for(var k=0;k<n;k++)rows.push({category:'6.3'});rows.push({category:'6.4'});rows.push({category:'6.5'});currentReport.summaryRows=rows}
+function buildRows(w){var n=Math.ceil(w*.05),rows=[];for(var i=0;i<n;i++)rows.push({category:'6.1'});for(var j=0;j<n;j++)rows.push({category:'6.2'});for(var k=0;k<n;k++)rows.push({category:'6.3'});rows.push({category:'6.4'});rows.push({category:'6.5'});currentReport.summaryRows=rows}
 function inputCell(id,v,c){var cl=c||'cell-input';var ev=cl==='suminput'?' onkeyup="refreshCalculations()" onchange="refreshCalculations()"':'';return '<input id="'+id+'" class="'+cl+'" value="'+esc(v||'')+'"'+ev+'>'}function selectCell(id,v,ops){var s='<select id="'+id+'" class="cell-select">';for(var i=0;i<ops.length;i++)s+='<option '+(ops[i]===v?'selected':'')+'>'+esc(ops[i])+'</option>';return s+'</select>'}function num(v){var x=parseFloat(String(v==null?'':v).replace(/,/g,''));return isNaN(x)?0:x}
 function effectiveCats(){var rows=currentReport.summaryRows||[],last='',a=[];for(var i=0;i<rows.length;i++){if(rows[i].category)last=rows[i].category;a.push(last)}return a}
 function hasData(r){return String(r.dispOrig||'')!==''||String(r.dispMade||'')!==''||String(r.dispNet||'')!==''||String(r.recOrig||'')!==''||String(r.recMade||'')!==''||String(r.recNet||'')!==''}
 function pctText(v){return v===''?'':(num(v)*100).toFixed(2)+'%'}
 function calc(){
- var rows=currentReport.summaryRows||[],cats=effectiveCats(),sum={E:0,F:0,G:0,H:0,I:0,J:0};
+ var rows=currentReport.summaryRows||[],cats=effectiveCats(),sum={dispOrig:0,dispMade:0,dispNet:0,recOrig:0,recMade:0,recNet:0};
+ var dmcVals=[],rmcVals=[];
  function rowCalc(r){
   var any=hasData(r),h=num(r.recOrig);
   if(any){
@@ -257,28 +258,84 @@ function calc(){
    r.avgBag=(h>0)?(100*num(r.recNet)/h).toFixed(2):'';
   }else{r.fbsfbe='';r.tlNet='';r.tltgPct='';r.avgBag='';}
  }
+ function addAvg(v,a){
+  var s=String(v==null?'':'').replace(/^\s+|\s+$/g,'');
+  if(s==='')return;
+  var n=parseFloat(String(v).replace(/,/g,''));
+  if(!isNaN(n))a.push(n);
+ }
+ var totalIndex=-1;
  for(var i=0;i<rows.length;i++){
-  var r=rows[i],c=cats[i];
-  if(c==='6.1'||c==='6.2'||c==='6.3'){
+  var r=rows[i],cc=cats[i];
+  if(cc==='6.1'||cc==='6.2'||cc==='6.3'||cc==='6.4'){
    rowCalc(r);
-   sum.E+=num(r.dispOrig);sum.F+=num(r.dispMade);sum.G+=num(r.dispNet);
-   sum.H+=num(r.recOrig);sum.I+=num(r.recMade);sum.J+=num(r.recNet);
+   sum.dispOrig+=num(r.dispOrig);sum.dispMade+=num(r.dispMade);sum.dispNet+=num(r.dispNet);
+   sum.recOrig+=num(r.recOrig);sum.recMade+=num(r.recMade);sum.recNet+=num(r.recNet);
+   addAvg(r.dmc,dmcVals);addAvg(r.rmc,rmcVals);
   }
+  if(cc==='6.5') totalIndex=i;
  }
- var ti=-1,fi=-1;
- for(var j=0;j<rows.length;j++){if(cats[j]==='6.4')fi=j;if(cats[j]==='6.5')ti=j}
- if(fi>=0&&ti>=0){
-  var f=rows[fi],tt=rows[ti];
-  f.dispOrig=(tt.dispOrig!==undefined&&tt.dispOrig!=='')?String(num(tt.dispOrig)-sum.E):'';
-  rowCalc(f);
+ if(totalIndex>=0){
+  var t=rows[totalIndex];
+  t.wagon='';
+  t.dmc=dmcVals.length?(dmcVals.reduce(function(a,b){return a+b},0)/dmcVals.length).toFixed(4):'';
+  t.dispOrig=sum.dispOrig.toFixed(1);
+  t.dispMade=sum.dispMade.toFixed(1);
+  t.dispNet=sum.dispNet.toFixed(5);
+  t.recOrig=sum.recOrig.toFixed(1);
+  t.recMade=sum.recMade.toFixed(1);
+  t.recNet=sum.recNet.toFixed(5);
+  t.fbsfbe=(sum.dispOrig+sum.dispMade-sum.recOrig).toFixed(1);
+  t.tlNet=(sum.dispNet-sum.recNet).toFixed(5);
+  t.tltgPct=(sum.dispNet!==0?((sum.dispNet-sum.recNet)/sum.dispNet).toFixed(6):'');
+  t.avgBag=(sum.recOrig!==0?(100*sum.recNet/sum.recOrig).toFixed(2):'');
+  t.rmc=rmcVals.length?(rmcVals.reduce(function(a,b){return a+b},0)/rmcVals.length).toFixed(3):'';
  }
- if(ti>=0)rowCalc(rows[ti]);
 }
 
-function refreshCalculations(){if(!currentReport)return;collectForm();var rows=currentReport.summaryRows||[],cats=effectiveCats(),keys=['fbsfbe','tlNet','tltgPct','avgBag'];for(var i=0;i<rows.length;i++){for(var j=0;j<keys.length;j++){var sp=q('sc_'+i+'_'+keys[j]);if(sp)sp.innerText=keys[j]==='tltgPct'?pctText(rows[i][keys[j]]):String(rows[i][keys[j]]==null?'':rows[i][keys[j]])}var e=q('sc_'+i+'_dispOrig');if(e&&cats[i]==='6.4')e.innerText=String(rows[i].dispOrig==null?'':rows[i].dispOrig)}updateAutoRemark();var rem=currentReport.remarks||[];for(var k=0;k<rem.length;k++)if(rem[k].key==='__TL_AUTO__'){var last=-1;for(var x=0;x<cats.length;x++)if(cats[x]==='6.5')last=x;if(last>=0){var rr=q('autoRemarkText');if(rr)rr.innerText=rem[k].text}}}
+function refreshCalculations(){
+ if(!currentReport)return;
+ collectForm();
+ var rows=currentReport.summaryRows||[],cats=effectiveCats(),keys=['fbsfbe','tlNet','tltgPct','avgBag'];
+ for(var i=0;i<rows.length;i++){
+  for(var j=0;j<keys.length;j++){
+   var sp=q('sc_'+i+'_'+keys[j]);
+   if(sp)sp.innerText=keys[j]==='tltgPct'?pctText(rows[i][keys[j]]):String(rows[i][keys[j]]==null?'':rows[i][keys[j]]);
+  }
+  if(cats[i]==='6.5'){
+   var totalKeys=['dmc','dispOrig','dispMade','dispNet','recOrig','recMade','recNet','fbsfbe','tlNet','tltgPct','avgBag','rmc'];
+   for(var z=0;z<totalKeys.length;z++){
+    var tp=q('sc_'+i+'_'+totalKeys[z]);
+    if(tp)tp.innerText=totalKeys[z]==='tltgPct'?pctText(rows[i][totalKeys[z]]):String(rows[i][totalKeys[z]]==null?'':rows[i][totalKeys[z]]);
+   }
+  }
+ }
+ updateAutoRemark();
+ var rem=currentReport.remarks||[];
+ for(var k=0;k<rem.length;k++)if(rem[k].key==='__TL_AUTO__'){
+  var last=-1;for(var x=0;x<cats.length;x++)if(cats[x]==='6.5')last=x;
+  if(last>=0){var rr=q('autoRemarkText');if(rr)rr.innerText=rem[k].text}
+ }
+}
 function collectForm(){var f=currentReport.fields||{};var ids=['depot','siding','manager','railIncharge','rrDate','commodity','distance','distanceLWB','lwbCapacity','stampValidity','lwbIncharge','lwbRotation','proofCheck','tareGross','ldpe','tarpaulin','doubleWeighment','seals','pestFree'];var map=['f_depot','f_siding','f_manager','f_rail','f_rr','f_commodity','f_distance','f_distanceLWB','f_lwbCapacity','f_stamp','f_lwbIncharge','f_rotation','f_proof','f_tare','f_ldpe','f_tarpaulin','f_double','f_seals','f_pest'];for(var i=0;i<ids.length;i++)f[ids[i]]=qv(map[i]);currentReport.member1=qv('member1');currentReport.member2=qv('member2');currentReport.member3=qv('member3');currentReport.submittedTo=qv('submittedTo');currentReport.copyTo=qv('copyTo');var ins=q('reportPage').getElementsByTagName('input');for(var x=0;x<ins.length;x++){var id=ins[x].id;if(id.indexOf('sr_')===0){var p=id.split('_'),idx=parseInt(p[1],10),key=p[2];if(currentReport.summaryRows[idx])currentReport.summaryRows[idx][key]=ins[x].value}}calc();updateAutoRemark()}
 function qv(id){var e=q(id);return e?e.value:''}function updateAutoRemark(){var rows=currentReport.summaryRows||[],cats=effectiveCats(),idx=-1;for(var i=0;i<rows.length;i++)if(cats[i]==='6.5')idx=i;if(idx<0)return;var qt=num(rows[idx].tlNet).toFixed(4),pc=num(rows[idx].tltgPct).toFixed(2);for(var j=0;j<(currentReport.remarks||[]).length;j++)if(currentReport.remarks[j].key==='__TL_AUTO__')currentReport.remarks[j].text='A Quantity of '+qt+' Quintals NET Transit loss noticed with '+pc+'% TL'}
-function renderSummaryRow(r,i,cat){cat=cat||r.category;var keys=['wagon','dmc','dispOrig','dispMade','dispNet','recOrig','recMade','recNet','fbsfbe','tlNet','tltgPct','avgBag','rmc'],cls=['c3','c4','c5','c6','c7','c8','c9','c10','c11','c12','c13','c14','c15'],h='';for(var j=0;j<keys.length;j++){var k=keys[j],v=(r[k]!==undefined&&r[k]!==''?r[k]:''),auto=(k==='fbsfbe'||k==='tlNet'||k==='tltgPct'||k==='avgBag'||(cat==='6.4'&&k==='dispOrig'));if(auto){var txt=k==='tltgPct'?pctText(v):String(v||'');h+='<td id="sc_'+i+'_'+k+'" class="'+cls[j]+' calculated">'+esc(txt)+'</td>'}else{h+='<td class="'+cls[j]+'">'+inputCell('sr_'+i+'_'+k,v,'suminput')+'</td>'}}return h}
+function renderSummaryRow(r,i,cat){
+ cat=cat||r.category;
+ var keys=['wagon','dmc','dispOrig','dispMade','dispNet','recOrig','recMade','recNet','fbsfbe','tlNet','tltgPct','avgBag','rmc'],
+     cls=['c3','c4','c5','c6','c7','c8','c9','c10','c11','c12','c13','c14','c15'],h='';
+ var total=(cat==='6.5');
+ for(var j=0;j<keys.length;j++){
+  var k=keys[j],v=(r[k]!==undefined&&r[k]!==''?r[k]:''),txt=k==='tltgPct'?pctText(v):String(v||'');
+  if(total){
+   h+='<td id="sc_'+i+'_'+k+'" class="'+cls[j]+' calculated">'+esc(txt)+'</td>';
+  }else{
+   var auto=(k==='fbsfbe'||k==='tlNet'||k==='tltgPct'||k==='avgBag');
+   if(auto)h+='<td id="sc_'+i+'_'+k+'" class="'+cls[j]+' calculated">'+esc(txt)+'</td>';
+   else h+='<td class="'+cls[j]+'">'+inputCell('sr_'+i+'_'+k,v,'suminput')+'</td>';
+  }
+ }
+ return h;
+}
 
 function renderReport(){calc();var f=currentReport.fields||{},cats=effectiveCats(),rows=currentReport.summaryRows||[],h='<div class="report-title">ICCS REPORT ON THE EXCLUSIVE SUPERVISION OF UNLOADING OF 10% WAGONS FROM THE RAKE'+(currentReport.rakeName?' '+esc(currentReport.rakeName):'')+'</div><table class="rtbl"><colgroup><col class="c-code"><col class="c-label"><col class="c-val"></colgroup>';h+='<tr><td colspan="3" class="rsec">1.0 &nbsp; GENERAL DETAILS</td></tr>';h+=rr('1.1','NAME OF UNLOADING DEPOT WITH FCI DIVISIONAL OFFICE','f_depot',f.depot);h+=rr('1.2','NAME OF SIDING/ RH','f_siding',f.siding);h+=rr('1.3','NAME OF MANAGER (D)/ INCHARGE','f_manager',f.manager);h+=rr('1.4','NAME OF RAILHEAD INCHARGE','f_rail',f.railIncharge);h+=rr('1.5','RR NO. & DATE OF UNLOADING','f_rr',f.rrDate);h+=rr('1.6','COMMODITY WITH CROP YEAR STOCKS UNLOADED','f_commodity',f.commodity);h+=rr('1.7','DISTANCE FROM DEPOT TO RAILHEAD','f_distance',f.distance);h+=rr('1.8','DISTANCE FROM DEPOT TO LWB IN CASE DISTANCE IS MORE THAN 10 KMS FROM DEPOT TO RAIL HEAD','f_distanceLWB',f.distanceLWB);h+='<tr><td colspan="3" class="rsec">2.0 &nbsp; LORRY WEIGHBRIDGE SUPERVISION</td></tr>';h+=rr('2.1','LWB CAPACITY & MAKE','f_lwbCapacity',f.lwbCapacity);h+=rr('2.2','VALADITY OF STAMPING OF LWB','f_stamp',f.stampValidity);h+=rr('2.3','NAME OF THE LWB INCHARGE','f_lwbIncharge',f.lwbIncharge);h+=rrc('2.4','WHETHER LWB INCHARGE ROTATION DONE OR NOT?','f_rotation',f.lwbRotation,['YES','NO','NOT APLICABLE']);h+=rr('2.5','RESULTS OF ZERO POINT & 1000 KG PRO WEIGHT TEST CHECKS','f_proof',f.proofCheck);h+=rrc('2.6','TARE & GROSS WEIGHMENT OF TRUCKS CONDUCTED ON EACH TRIP. YES OR NO. IF NO, REASONS THEREOF','f_tare',f.tareGross,['YES','NO']);h+='<tr><td colspan="3" class="rsec">3.0 &nbsp; RH/SIDING UNLOADING OPERATIONS</td></tr>';h+=rrc('3.1','WHETHER LDPE SHEETS FOUND ON THE WAGON FLOOR OR NOT ?','f_ldpe',f.ldpe,['YES','NO']);h+=rrc('3.2','WHETHER TARPAULINS ARE USED UNDERNEATH THE TRUCK & WAGON DOOR TO COLLECT SPILIAGE','f_tarpaulin',f.tarpaulin,['YES','NO']);h+=rrc('3.3','DOUBLE WEIGHMENT IS CONDUCTED IN CASE DISTANCE IS MORE THAN 10 KM FROM GODOWN TO RH. IF NOT, ESCORT PROVIDED OR NOT','f_double',f.doubleWeighment,['YES','NO','NOT APLICABLE']);h+=rrc('4.0','WHETHER FCI HIGH SECURTY CABLE SEALS & RAILWAY SEAL FOUND IN THE WAGONS OR NOT?','f_seals',f.seals,['YES','NO']);h+=rrc('5.0','WHETHER STOCK UNLOADED ARE IN PEST FREE CONDITION OR NOT?','f_pest',f.pestFree,['YES','NO']);h+='</table><table class="sumtbl"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"><col class="c7"><col class="c8"><col class="c9"><col class="c10"><col class="c11"><col class="c12"><col class="c13"><col class="c14"><col class="c15"></colgroup><tr><th colspan="15" style="font-size:7.4px;text-align:left">6.0 &nbsp; SUPERVSION OF CONTROLLED WAGONS(10%)</th></tr><tr><th rowspan="2" class="c1">Sl.No.</th><th rowspan="2" class="c2">DESCRIPTION</th><th rowspan="2" class="c3">WAGON NO</th><th rowspan="2" class="c4">DMC</th><th colspan="3">DISPATCH</th><th colspan="3">RECEIPT</th><th rowspan="2" class="c11">FBS/FBE</th><th rowspan="2" class="c12">NET WT<br>(QTLS)</th><th rowspan="2" class="c13">TL/TG%</th><th rowspan="2" class="c14">AVG WT OF BAGS<br>(KG/BAG)</th><th rowspan="2" class="c15">RMC</th></tr><tr><th class="c5">NO OF ORIGINAL BAGS</th><th class="c6">NO OF MADE UP BAGS</th><th class="c7">NET WT (QTLS)</th><th class="c8">NO OF ORIGINAL BAGS</th><th class="c9">NO OF MADE UP BAGS</th><th class="c10">NET WT (QTLS)</th></tr>';
 for(var i=0;i<rows.length;i++){var cat=cats[i];if(cat==='6.5'){h+='<tr><td class="c1">6.5</td><td class="c2"><b>TOTAL QUANTITY UNLOADED IN THE RAKE (6.1+6.2+6.3+6.4)</b></td>'+renderSummaryRow(rows[i],i)+'</tr>';continue}if(cat==='6.4'){h+='<tr><td class="c1">6.4</td><td class="c2">QUANTITY UNLOADED IN OTHER WAGONS NOT SUPERVISED BY BOTH END ICCS<br><b>WAGON WISE COPY ENCLOSED</b></td>'+renderSummaryRow(rows[i],i)+'</tr>';continue}if(cat==='6.1'||cat==='6.2'||cat==='6.3'){var start=i,span=1;while(start+span<rows.length&&cats[start+span]===cat)span++;var d=cat==='6.1'?'QUANTITY UNLOADED FROM CONTROLLED WAGONS SUPERVISED BY BOTH END ICCS':cat==='6.2'?'QUANTITY UNLOADED FROM OTHER THAN CONTROLLED WAGONS SUPERVISED BY CONSIGNEE ICCS ONLY':'QUANTITY UNLOADED FROM CONTROLLED WAGONS SUPERVISED BY CONSIGNOR ICCS ONLY';h+='<tr><td class="c1" rowspan="'+span+'">'+cat+'</td><td class="c2" rowspan="'+span+'">'+esc(d)+'</td>'+renderSummaryRow(rows[i],i)+'</tr>';for(var z=1;z<span;z++)h+='<tr>'+renderSummaryRow(rows[i+z],i+z)+'</tr>';i=start+span-1}}
